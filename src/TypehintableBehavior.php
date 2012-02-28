@@ -14,7 +14,7 @@
  */
 class TypehintableBehavior extends Behavior
 {
-    private $refFKs		= array();
+    private $refFKs    	= array();
 
     private $crossFKs	= array();
 
@@ -44,6 +44,28 @@ class TypehintableBehavior extends Behavior
     protected function getColumnRefAdder($columnName)
     {
         return 'add' . $this->refFKs[$columnName];
+    }
+	
+	/**
+	 * Used only with one to many relation
+	 * 
+	 * @param string $tableName The foreign table name
+	 * 
+	 * @return string The method name
+	 */
+	protected function getColumnRefSetter($tableName)
+    {
+		$foreignKeys = $this->getTable()->getForeignKeys();
+		foreach ($foreignKeys as $foreignKey)
+		{
+			if ($foreignKey->getForeignTableCommonName() == $tableName)
+			{
+				break;
+			}
+		}
+		
+		$foreignKeys = null;
+        return 'set' . $foreignKey->getForeignTable()->getPhpName();
     }
 
     protected function getColumnRefRemover($columnName)
@@ -79,7 +101,10 @@ class TypehintableBehavior extends Behavior
 
                 $funcName = $this->getColumnCrossRemover($columnName);
                 $this->filterFunction($funcName, $typehint, $script);
-            }
+            } elseif (in_array($columnName, $this->getTable()->getForeignTableNames())) {
+				$funcName = $this->getColumnRefSetter($columnName);
+                $this->filterFunction($funcName, $typehint, $script);
+			}
         }
     }
 
